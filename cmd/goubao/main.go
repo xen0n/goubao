@@ -6,10 +6,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"go/ast"
-	"go/types"
 	"os"
-	"path"
 	"sort"
 
 	"golang.org/x/tools/go/packages"
@@ -87,29 +84,62 @@ func main() {
 		panic(err)
 	}
 
+	pkgsByImportPath := make(map[string]*packages.Package, len(pkgs))
 	for _, pkg := range pkgs {
-		fmt.Printf("Package %s:\n\n", pkg)
-		tcx := tyContext{
-			tyInfo: pkg.TypesInfo,
-		}
-		_ = tcx
-
-		for i, fileNode := range pkg.Syntax {
-			filePath := pkg.CompiledGoFiles[i]
-			basename := path.Base(filePath)
-			_ = fileNode
-			fmt.Printf(">>> %s\t%s\n", basename, filePath)
-		}
-
-		fmt.Printf("\n")
+		pkgsByImportPath[pkg.PkgPath] = pkg
 	}
-}
 
-type tyContext struct {
-	tyInfo *types.Info
-}
+	tcx := tyContext{
+		pkgsByImportPath: pkgsByImportPath,
+	}
+	tcx.populateTyIndex()
 
-//nolint:unused // WIP
-func (tcx *tyContext) typeOf(e ast.Expr) types.Type {
-	return tcx.tyInfo.TypeOf(e)
+	for _, spec := range apiSpecs {
+		handlerTyPkgPath := spec.Func.Receiver.Ident.Pkg
+		handlerTyName := spec.Func.Receiver.Ident.Name
+		handlerMethName := spec.Func.Ident.Name
+
+		fmt.Printf("- %s %s:\n", spec.HTTPMethod, spec.Path)
+
+		meth, ok := tcx.lookupMethod(handlerTyPkgPath, handlerTyName, handlerMethName)
+		if !ok {
+			fmt.Printf(
+				"!!! unresolved handler method (%s.%s).%s\n",
+				handlerTyPkgPath,
+				handlerTyName,
+				handlerMethName,
+			)
+			continue
+		}
+
+		reqTy, ok := tcx.lookupTy(&spec.ReqType)
+		if !ok {
+			if isTypeEmpty(spec.ReqType) {
+				reqTy = &emptyTySpec{}
+			} else {
+				fmt.Printf(
+					"!!! unresolved request type %s.%s\n",
+					spec.ReqType.Ident.Pkg,
+					spec.ReqType.Ident.Name,
+				)
+			}
+		}
+
+		respTy, ok := tcx.lookupTy(&spec.RespType)
+		if !ok {
+			if isTypeEmpty(spec.RespType) {
+				respTy = &emptyTySpec{}
+			} else {
+				fmt.Printf(
+					"!!! unresolved response type %s.%s\n",
+					spec.RespType.Ident.Pkg,
+					spec.RespType.Ident.Name,
+				)
+			}
+		}
+
+		fmt.Printf("  - meth: %v\n", meth)
+		fmt.Printf("  - reqTy: %s\n", reqTy.String())
+		fmt.Printf("  - respTy: %s\n", respTy.String())
+	}
 }
