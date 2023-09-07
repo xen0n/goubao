@@ -95,6 +95,7 @@ func main() {
 	tcx.populateTyIndex()
 
 	for _, spec := range apiSpecs {
+		spec := spec
 		handlerTyPkgPath := spec.Func.Receiver.Ident.Pkg
 		handlerTyName := spec.Func.Receiver.Ident.Name
 		handlerMethName := spec.Func.Ident.Name
