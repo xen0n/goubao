@@ -1,33 +1,75 @@
+version: "2"
 run:
   modules-download-mode: readonly
-
 linters:
-  disable-all: true
+  default: none
   enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+    - gocheckcompilerdirectives
+    - gochecksumtype
     - goheader
-    - goimports
     - gosec
-    - gosimple
+    - gosmopolitan
+    - govet
+    - ineffassign
     - lll
+    - loggercheck
+    - makezero
+    - musttag
     - nakedret
+    - nilerr
+    - nilnesserr
+    - noctx
+    - protogetter
+    - reassign
+    - recvcheck
     - revive
-    - stylecheck
-  presets:
-    - bugs
+    - rowserrcheck
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - testifylint
+    - unparam
     - unused
-
-linters-settings:
-  goheader:
-    template: |-
-      SPDX-License-Identifier: MIT
-  goimports:
-    local-prefixes: github.com/xen0n/goubao
-  gosimple:
-    go: '1.17'
-  lll:
-    line-length: 120
-    tab-width: 4
-  nakedret:
-    max-func-lines: 1
-  stylecheck:
-    go: '1.17'
+    - zerologlint
+  settings:
+    goheader:
+      template: 'SPDX-License-Identifier: MIT'
+    lll:
+      line-length: 120
+      tab-width: 4
+    nakedret:
+      max-func-lines: 1
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/xen0n/goubao
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
